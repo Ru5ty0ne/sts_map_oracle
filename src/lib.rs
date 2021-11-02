@@ -2,7 +2,6 @@
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::path::Path;
 use RoomType::*;
 
 #[derive(PartialEq, Eq, Hash)]
@@ -617,7 +616,7 @@ struct DumpMap {
     nodes: Vec<DumpNode>,
 }
 
-pub fn dump_map(map: &Map, path: &Path) {
+pub fn dump_map(map: &Map) -> String {
     let mut edges = vec![];
     let mut nodes = vec![];
     for row in map.iter() {
@@ -637,24 +636,7 @@ pub fn dump_map(map: &Map, path: &Path) {
         }
     }
     let dump = DumpMap { edges, nodes };
-    let serialized = serde_json::to_string(&dump).unwrap();
-    write_to_file(&serialized, path);
-}
-
-fn write_to_file(s: &str, path: &Path) {
-    use std::fs::File;
-    use std::io::prelude::*;
-
-    let display = path.display();
-    let mut file = match File::create(&path) {
-        Err(why) => panic!("couldn't create {}: {}", display, why),
-        Ok(file) => file,
-    };
-
-    match file.write_all(s.as_bytes()) {
-        Err(why) => panic!("couldn't write to {}: {}", display, why),
-        Ok(_) => println!("Map saved to {}", display),
-    }
+    serde_json::to_string(&dump).unwrap()
 }
 
 fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
