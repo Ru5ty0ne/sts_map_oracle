@@ -385,7 +385,7 @@ pub fn format_map(nodes: &Map) -> String {
             for edge in node.edges.iter() {
                 match edge.dst_x.cmp(&node.x) {
                     Ordering::Equal => mid = "|",
-                    Ordering::Less => left = "\\",
+                    Ordering::Less => left = r"\",
                     Ordering::Greater => right = "/",
                 };
             }
