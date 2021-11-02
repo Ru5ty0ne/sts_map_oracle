@@ -577,9 +577,7 @@ pub fn dump_map(map: &Map) -> String {
                         class: t,
                     });
                 }
-                for edge in node.edges.iter() {
-                    edges.push(edge.clone());
-                }
+                edges.extend(node.edges.iter().cloned());
             }
         }
     }
