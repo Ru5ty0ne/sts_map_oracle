@@ -334,36 +334,22 @@ fn get_common_ancestor<'a>(
         if l_node.get_parents(map).is_empty() || r_node.get_parents(map).is_empty() {
             return None;
         }
-        l_node = get_nodes_with_max_x(l_node.get_parents(map));
-        r_node = get_nodes_with_min_x(r_node.get_parents(map));
+        l_node = l_node
+            .get_parents(map)
+            .iter()
+            .max_by_key(|point| point.x)
+            .unwrap();
+        r_node = r_node
+            .get_parents(map)
+            .iter()
+            .min_by_key(|point| point.x)
+            .unwrap();
         if l_node == r_node {
             return Some(l_node);
         }
         current_y -= 1;
     }
     None
-}
-
-fn get_nodes_with_max_x(points: &[Point]) -> &Point {
-    assert!(!points.is_empty());
-    let mut max = &points[0];
-    for point in points.iter() {
-        if point.x > max.x {
-            max = point;
-        }
-    }
-    max
-}
-
-fn get_nodes_with_min_x(points: &[Point]) -> &Point {
-    assert!(!points.is_empty());
-    let mut min = &points[0];
-    for point in points.iter() {
-        if point.x < min.x {
-            min = point;
-        }
-    }
-    min
 }
 
 fn create_nodes(height: i32, width: i32) -> Map {
