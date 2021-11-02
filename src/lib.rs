@@ -550,8 +550,8 @@ fn distribute_rooms_across_map(
     rng: &mut Random,
 ) -> Map {
     let node_count = count_connected_nodes(&map);
-    while room_list.len() < node_count {
-        room_list.push(MonsterRoom);
+    if room_list.len() < node_count {
+        room_list.resize(node_count, MonsterRoom);
     }
     shuffle(&mut room_list, rng);
     map = assign_rooms_to_nodes(map, &mut room_list);
