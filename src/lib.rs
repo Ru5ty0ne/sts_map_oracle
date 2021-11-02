@@ -433,11 +433,7 @@ pub fn format_map(nodes: &Map) -> String {
 }
 
 fn padding_genrator(n: usize) -> String {
-    let mut s = String::new();
-    for _i in 0..n {
-        s.push(' ');
-    }
-    s
+    " ".repeat(n)
 }
 
 fn generate_room_type(
