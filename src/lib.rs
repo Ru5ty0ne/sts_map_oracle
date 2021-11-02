@@ -446,15 +446,11 @@ fn rule_sibling_matches(sibs: &[&MapRoomNode], room: &RoomType) -> bool {
         MonsterRoom,
         EventRoom,
     ];
-    for sib in sibs.iter() {
-        if sib.class.is_some()
-            && applicable_rooms.contains(&room)
-            && room == sib.class.as_ref().unwrap()
-        {
-            return true;
-        }
-    }
-    false
+    applicable_rooms.contains(&room)
+        && sibs
+            .iter()
+            .flat_map(|sib| sib.class)
+            .any(|class| class == *room)
 }
 
 fn get_next_room_type(map: &Map, n: &MapRoomNode, room_list: &[RoomType]) -> Option<RoomType> {
