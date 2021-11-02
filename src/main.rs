@@ -1,4 +1,3 @@
-#![feature(unchecked_math)]
 use clap::{App, Arg};
 use std::path::Path;
 

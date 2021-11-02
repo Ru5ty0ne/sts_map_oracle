@@ -1,4 +1,3 @@
-#![feature(unchecked_math)]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -116,7 +115,7 @@ impl Random {
         self.seed0 = s0;
         s1 ^= s1 << 23;
         self.seed1 = s1 ^ s0 ^ s1 >> 17 ^ s0 >> 26;
-        unsafe { s0.unchecked_add(self.seed1) }
+        s0.wrapping_add(self.seed1)
     }
 
     fn next_shuffle(&mut self, n: u64) -> usize {
@@ -145,11 +144,9 @@ impl Random {
 fn murmur_hash3(x: u64) -> u64 {
     let mut x = x;
     x ^= x >> 33;
-    unsafe {
-        x = x.unchecked_mul(0xff51afd7ed558ccd);
-        x ^= x >> 33;
-        x = x.unchecked_mul(0xc4ceb9fe1a85ec53);
-    }
+    x = x.wrapping_mul(0xff51afd7ed558ccd);
+    x ^= x >> 33;
+    x = x.wrapping_mul(0xc4ceb9fe1a85ec53);
     x ^= x >> 33;
     x
 }
