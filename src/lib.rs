@@ -3,6 +3,14 @@ use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use RoomType::*;
 
+/// println!, but with a #[cfg(debug_assertions)] criterion.
+macro_rules! debug_println {
+    ( $( $t:tt )* ) => {
+        #[cfg(debug_assertions)]
+        println!($( $t )*);
+    }
+}
+
 #[derive(PartialEq, Eq, Hash)]
 pub struct Point {
     pub x: usize,
@@ -446,20 +454,17 @@ fn generate_room_type(
     available_room_count: usize,
 ) -> Vec<RoomType> {
     let mut acc = vec![];
-    #[cfg(debug_assertions)]
-    println!("Rooms: {:?}", &available_room_count);
+    debug_println!("Rooms: {:?}", &available_room_count);
     let rooms_type_q = [ShopRoom, RestRoom, MonsterRoomElite, EventRoom];
     for t in rooms_type_q.iter() {
         let chance = room_chances.get(&t).unwrap();
         let rooms = (chance * available_room_count as f64).round() as usize;
-        #[cfg(debug_assertions)]
-        println!("{:?}: {:?}", &t, &rooms);
+        debug_println!("{:?}: {:?}", &t, &rooms);
         for _i in 0..rooms {
             acc.push(*t);
         }
     }
-    #[cfg(debug_assertions)]
-    println!("{:?}: {:?}", &MonsterRoom, available_room_count - acc.len());
+    debug_println!("{:?}: {:?}", &MonsterRoom, available_room_count - acc.len());
     acc
 }
 fn rule_assignable_to_row(n: &MapRoomNode, room: &RoomType) -> bool {
@@ -552,8 +557,7 @@ fn assign_rooms_to_nodes(map: Map, room_list: &mut Vec<RoomType>) -> Map {
         }
     }
     if !room_list.is_empty() {
-        #[cfg(debug_assertions)]
-        println!("Leftovers: {:?}", &room_list);
+        debug_println!("Leftovers: {:?}", &room_list);
     }
     map
 }
@@ -563,10 +567,10 @@ fn last_minute_node_checker(map: Map) -> Map {
     for row in map.iter_mut() {
         for node in row.iter_mut() {
             if !node.edges.is_empty() && node.class.is_none() {
-                #[cfg(debug_assertions)]
-                println!(
+                debug_println!(
                     "Room [{:?},{:?}] was empty. Now populated with monsters.",
-                    &node.y, &node.x
+                    &node.y,
+                    &node.x
                 );
                 node.class = Some(MonsterRoom);
             }
