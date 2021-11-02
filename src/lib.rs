@@ -649,8 +649,9 @@ fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
 }
 
 pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i32) -> Vec<Map> {
-    let acts = [1, 200, 600];
-    acts.iter()
+    const ACT_SEEDS: [i64; 3] = [1, 200, 600];
+    ACT_SEEDS
+        .iter()
         .map(|act| {
             let mut rng = Random::new(seed + act);
             let mut map = generate_dungeon(map_height, map_width, path_density, &mut rng);
