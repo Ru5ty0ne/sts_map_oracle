@@ -582,8 +582,7 @@ pub fn dump_map(map: &Map) -> String {
 }
 
 fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
-    let size = list.len();
-    for i in (2..=size).rev() {
+    for i in (2..=list.len()).rev() {
         let tmp = rng.next_shuffle(i as u64);
         list.swap(tmp, i - 1);
     }
