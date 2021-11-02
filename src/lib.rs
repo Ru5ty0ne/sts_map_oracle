@@ -394,9 +394,8 @@ fn get_room_symbol(t: &Option<RoomType>) -> &str {
 
 pub fn format_map(nodes: &Map) -> String {
     let mut s = String::new();
-    let left_padding_size = 5;
     for row_num in (0..nodes.len()).rev() {
-        s.push_str(&format!("\n {}", &padding_genrator(left_padding_size)));
+        s.push_str(&format!("\n{: <6}", ""));
         for node in nodes[row_num].iter() {
             let (mut right, mut mid, mut left) = (" ", " ", " ");
             for edge in node.edges.iter() {
@@ -408,10 +407,7 @@ pub fn format_map(nodes: &Map) -> String {
             }
             s.push_str(&format!("{}{}{}", left, mid, right));
         }
-        s.push_str(&format!("\n{} ", &row_num.to_string()));
-        s.push_str(&padding_genrator(
-            left_padding_size - row_num.to_string().len(),
-        ));
+        s.push_str(&format!("\n{: <6}", row_num));
         for node in nodes[row_num].iter() {
             let mut node_symbol = " ";
             if row_num == nodes.len() - 1 {
@@ -430,10 +426,6 @@ pub fn format_map(nodes: &Map) -> String {
     }
 
     s
-}
-
-fn padding_genrator(n: usize) -> String {
-    " ".repeat(n)
 }
 
 fn generate_room_type(
