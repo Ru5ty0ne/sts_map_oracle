@@ -476,10 +476,11 @@ fn get_next_room_type(map: &Map, n: &MapRoomNode, room_list: &[RoomType]) -> Opt
 
 fn rule_parent_matches(map: &Map, parents: &[Point], room: &RoomType) -> bool {
     let applicable_rooms = [RestRoom, TreasureRoom, ShopRoom, MonsterRoomElite];
-    parents
-        .iter()
-        .flat_map(|parent| parent.get_node(map).class)
-        .any(|class| class == *room && applicable_rooms.contains(&class))
+    applicable_rooms.contains(room)
+        && parents
+            .iter()
+            .flat_map(|parent| parent.get_node(map).class)
+            .any(|class| class == *room)
 }
 
 fn get_siblings<'a>(map: &'a Map, node: &'a MapRoomNode) -> Vec<&'a MapRoomNode> {
