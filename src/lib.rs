@@ -501,16 +501,12 @@ fn rule_parent_matches(map: &Map, parents: &[Point], room: &RoomType) -> bool {
 }
 
 fn get_siblings<'a>(map: &'a Map, node: &'a MapRoomNode) -> Vec<&'a MapRoomNode> {
-    let mut siblings = vec![];
-    for parent in node.parents.iter() {
-        for edge in parent.get_node(map).edges.iter() {
-            let sib_node = &map[edge.dst_y as usize][edge.dst_x as usize];
-            if sib_node != node {
-                siblings.push(sib_node);
-            }
-        }
-    }
-    siblings
+    node.parents
+        .iter()
+        .flat_map(|parent| parent.get_node(map).edges.iter())
+        .map(|edge| &map[edge.dst_y as usize][edge.dst_x as usize])
+        .filter(|sib_node| *sib_node != node)
+        .collect()
 }
 
 fn assign_rooms_to_nodes(mut map: Map, room_list: &mut Vec<RoomType>) -> Map {
