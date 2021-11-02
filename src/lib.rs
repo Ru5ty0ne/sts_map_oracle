@@ -367,15 +367,9 @@ fn get_nodes_with_min_x(points: &[Point]) -> &Point {
 }
 
 fn create_nodes(height: i32, width: i32) -> Map {
-    let mut nodes: Map = vec![];
-    for y in 0..height {
-        let mut row = vec![];
-        for x in 0..width {
-            row.push(MapRoomNode::new(x, y));
-        }
-        nodes.push(row);
-    }
-    nodes
+    (0..height)
+        .map(|y| (0..width).map(|x| MapRoomNode::new(x, y)).collect())
+        .collect()
 }
 
 fn get_room_symbol(t: &Option<RoomType>) -> &str {
