@@ -530,15 +530,10 @@ fn last_minute_node_checker(mut map: Map) -> Map {
 }
 
 fn count_connected_nodes(map: &Map) -> usize {
-    let mut res = 0;
-    for row in map.iter() {
-        for node in row.iter() {
-            if !node.edges.is_empty() && node.class.is_none() {
-                res += 1;
-            }
-        }
-    }
-    res
+    map.iter()
+        .flat_map(|row| row.iter())
+        .filter(|node| !node.edges.is_empty() && node.class.is_none())
+        .count()
 }
 
 fn distribute_rooms_across_map(
