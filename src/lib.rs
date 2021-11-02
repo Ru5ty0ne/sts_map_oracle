@@ -394,9 +394,8 @@ fn get_room_symbol(t: &Option<RoomType>) -> &str {
 
 pub fn format_map(nodes: &Map) -> String {
     let mut s = String::new();
-    let mut row_num = nodes.len() - 1;
     let left_padding_size = 5;
-    loop {
+    for row_num in (0..nodes.len()).rev() {
         s.push_str(&format!("\n {}", &padding_genrator(left_padding_size)));
         for node in nodes[row_num].iter() {
             let (mut right, mut mid, mut left) = (" ", " ", " ");
@@ -428,10 +427,6 @@ pub fn format_map(nodes: &Map) -> String {
             }
             s.push_str(&format!(" {} ", node_symbol));
         }
-        if row_num == 0 {
-            break;
-        }
-        row_num -= 1;
     }
 
     s
