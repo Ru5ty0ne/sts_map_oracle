@@ -2,7 +2,10 @@
 use clap::{App, Arg};
 use std::path::Path;
 
-use sts_map_oracle;
+use sts_map_oracle::dump_map;
+use sts_map_oracle::generate_maps;
+use sts_map_oracle::print_map;
+use sts_map_oracle::Map;
 
 fn main() {
     let matches = App::new("sts_map_oracle")
@@ -37,12 +40,21 @@ fn main() {
             return;
         }
     };
+    let path = &matches.value_of("path").map(Path::new);
 
-    sts_map_oracle::generate_and_print_maps(
-        seed,
-        map_height,
-        map_width,
-        path_density,
-        &matches.value_of("path").map(Path::new),
-    );
+    let maps: Vec<Map> = generate_maps(seed, map_height, map_width, path_density);
+
+    for (i, map) in maps.iter().enumerate() {
+        println!("\n\nAct {:?}", i + 1);
+        print_map(&map);
+        if let Some(path) = path {
+            if path.exists() {
+                let file_name = format!("{:?}_Act{:?}.json", seed, i + 1);
+                let path = path.join(file_name);
+                dump_map(&map, &path);
+            } else {
+                println!("Can't save map because path {:?} doesn't exist", &path);
+            }
+        }
+    }
 }

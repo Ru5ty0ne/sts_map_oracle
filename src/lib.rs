@@ -65,7 +65,7 @@ enum RoomType {
     TreasureRoom,
 }
 
-struct MapRoomNode {
+pub struct MapRoomNode {
     x: i32,
     y: i32,
     edges: BTreeSet<MapEdge>,
@@ -92,7 +92,7 @@ impl MapRoomNode {
     }
 }
 
-type Map = Vec<Vec<MapRoomNode>>;
+pub type Map = Vec<Vec<MapRoomNode>>;
 
 #[derive(Debug)]
 struct Random {
@@ -392,7 +392,7 @@ fn get_room_symbol(t: &Option<RoomType>) -> &str {
     }
 }
 
-fn print_map(nodes: &Map) {
+pub fn print_map(nodes: &Map) {
     let mut s = String::new();
     let mut row_num = nodes.len() - 1;
     let left_padding_size = 5;
@@ -616,7 +616,7 @@ struct DumpMap {
     nodes: Vec<DumpNode>,
 }
 
-fn dump_map(map: &Map, path: &Path) {
+pub fn dump_map(map: &Map, path: &Path) {
     let mut edges = vec![];
     let mut nodes = vec![];
     for row in map.iter() {
@@ -664,58 +664,43 @@ fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
     }
 }
 
-pub fn generate_and_print_maps(
-    seed: i64,
-    map_height: i32,
-    map_width: i32,
-    path_density: i32,
-    path: &Option<&Path>,
-) {
+pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i32) -> Vec<Map> {
     let acts = [1, 200, 600];
-    for (i, act) in acts.iter().enumerate() {
-        println!("\n\nAct {:?}", i + 1);
-        let mut rng = Random::new(seed + act);
-        let mut map = generate_dungeon(map_height, map_width, path_density, &mut rng);
-        let mut count = 0usize;
-        for row in map.iter() {
-            for n in row.iter() {
-                if n.edges.is_empty() || n.y as usize == map.len() - 1 {
-                    continue;
+    acts.iter()
+        .map(|act| {
+            let mut rng = Random::new(seed + act);
+            let mut map = generate_dungeon(map_height, map_width, path_density, &mut rng);
+            let mut count = 0usize;
+            for row in map.iter() {
+                for n in row.iter() {
+                    if n.edges.is_empty() || n.y as usize == map.len() - 1 {
+                        continue;
+                    }
+                    count += 1;
                 }
-                count += 1;
             }
-        }
-        map[0]
-            .iter_mut()
-            .for_each(|node| node.class = Some(MonsterRoom));
-        map[8]
-            .iter_mut()
-            .for_each(|node| node.class = Some(TreasureRoom));
-        let map_size = map.len();
-        map[map_size - 1]
-            .iter_mut()
-            .for_each(|node| node.class = Some(RestRoom));
+            map[0]
+                .iter_mut()
+                .for_each(|node| node.class = Some(MonsterRoom));
+            map[8]
+                .iter_mut()
+                .for_each(|node| node.class = Some(TreasureRoom));
+            let map_size = map.len();
+            map[map_size - 1]
+                .iter_mut()
+                .for_each(|node| node.class = Some(RestRoom));
 
-        let room_chances: HashMap<RoomType, f64> = [
-            (ShopRoom, 0.05),
-            (RestRoom, 0.12),
-            (EventRoom, 0.22),
-            (MonsterRoomElite, 0.08 * 1.6), //x1.6 for ascensionLevel >= 1
-        ]
-        .iter()
-        .cloned()
-        .collect();
-        let room_list = generate_room_type(&room_chances, count);
-        map = distribute_rooms_across_map(map, room_list, &mut rng);
-        print_map(&map);
-        if let Some(path) = path {
-            if path.exists() {
-                let file_name = format!("{:?}_Act{:?}.json", seed, i + 1);
-                let path = path.join(file_name);
-                dump_map(&map, &path);
-            } else {
-                println!("Can't save map because path {:?} doesn't exist", &path);
-            }
-        }
-    }
+            let room_chances: HashMap<RoomType, f64> = [
+                (ShopRoom, 0.05),
+                (RestRoom, 0.12),
+                (EventRoom, 0.22),
+                (MonsterRoomElite, 0.08 * 1.6), //x1.6 for ascensionLevel >= 1
+            ]
+            .iter()
+            .cloned()
+            .collect();
+            let room_list = generate_room_type(&room_chances, count);
+            distribute_rooms_across_map(map, room_list, &mut rng)
+        })
+        .collect()
 }
