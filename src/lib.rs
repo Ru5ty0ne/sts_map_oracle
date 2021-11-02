@@ -149,8 +149,7 @@ impl Random {
     }
 }
 
-fn murmur_hash3(x: u64) -> u64 {
-    let mut x = x;
+fn murmur_hash3(mut x: u64) -> u64 {
     x ^= x >> 33;
     x = x.wrapping_mul(0xff51afd7ed558ccd);
     x ^= x >> 33;
@@ -160,8 +159,7 @@ fn murmur_hash3(x: u64) -> u64 {
 }
 
 //Trim edges with common destination on first floor
-fn filter_redutant_edges(map: Map) -> Map {
-    let mut map = map;
+fn filter_redutant_edges(mut map: Map) -> Map {
     let mut existing_edges: HashSet<Point> = HashSet::new();
     let mut delete_list: Vec<(usize, MapEdge)> = vec![];
     for (i, node) in map[0].iter().enumerate() {
@@ -189,8 +187,7 @@ fn generate_dungeon(height: i32, width: i32, path_density: i32, rng: &mut Random
     filter_redutant_edges(map)
 }
 
-fn create_paths(nodes: Map, path_density: i32, rng: &mut Random) -> Map {
-    let mut nodes = nodes;
+fn create_paths(mut nodes: Map, path_density: i32, rng: &mut Random) -> Map {
     assert!(!nodes.is_empty());
     assert!(!nodes[0].is_empty());
     let row_size = (nodes[0].len() - 1) as i32;
@@ -209,8 +206,7 @@ fn create_paths(nodes: Map, path_density: i32, rng: &mut Random) -> Map {
     nodes
 }
 
-fn _create_paths(nodes: Map, edge: &MapEdge, rng: &mut Random) -> Map {
-    let mut nodes = nodes;
+fn _create_paths(mut nodes: Map, edge: &MapEdge, rng: &mut Random) -> Map {
     let min;
     let max;
     let current_node: &MapRoomNode = &nodes[edge.dst_y as usize][edge.dst_x as usize];
@@ -540,8 +536,7 @@ fn get_siblings<'a>(map: &'a Map, node: &'a MapRoomNode) -> Vec<&'a MapRoomNode>
     siblings
 }
 
-fn assign_rooms_to_nodes(map: Map, room_list: &mut Vec<RoomType>) -> Map {
-    let mut map = map;
+fn assign_rooms_to_nodes(mut map: Map, room_list: &mut Vec<RoomType>) -> Map {
     let height = map.len();
     let width = map[0].len();
     for y in 0..height {
@@ -562,8 +557,7 @@ fn assign_rooms_to_nodes(map: Map, room_list: &mut Vec<RoomType>) -> Map {
     map
 }
 
-fn last_minute_node_checker(map: Map) -> Map {
-    let mut map = map;
+fn last_minute_node_checker(mut map: Map) -> Map {
     for row in map.iter_mut() {
         for node in row.iter_mut() {
             if !node.edges.is_empty() && node.class.is_none() {
@@ -591,9 +585,11 @@ fn count_connected_nodes(map: &Map) -> usize {
     res
 }
 
-fn distribute_rooms_across_map(map: Map, room_list: Vec<RoomType>, rng: &mut Random) -> Map {
-    let mut map = map;
-    let mut room_list = room_list;
+fn distribute_rooms_across_map(
+    mut map: Map,
+    mut room_list: Vec<RoomType>,
+    rng: &mut Random,
+) -> Map {
     let node_count = count_connected_nodes(&map);
     while room_list.len() < node_count {
         room_list.push(MonsterRoom);
