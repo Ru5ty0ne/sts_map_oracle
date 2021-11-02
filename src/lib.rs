@@ -392,7 +392,7 @@ fn get_room_symbol(t: &Option<RoomType>) -> &str {
     }
 }
 
-pub fn print_map(nodes: &Map) {
+pub fn format_map(nodes: &Map) -> String {
     let mut s = String::new();
     let mut row_num = nodes.len() - 1;
     let left_padding_size = 5;
@@ -433,7 +433,8 @@ pub fn print_map(nodes: &Map) {
         }
         row_num -= 1;
     }
-    println!("{}", &s);
+
+    s
 }
 
 fn padding_genrator(n: usize) -> String {

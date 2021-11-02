@@ -3,8 +3,8 @@ use clap::{App, Arg};
 use std::path::Path;
 
 use sts_map_oracle::dump_map;
+use sts_map_oracle::format_map;
 use sts_map_oracle::generate_maps;
-use sts_map_oracle::print_map;
 use sts_map_oracle::Map;
 
 fn main() {
@@ -45,8 +45,7 @@ fn main() {
     let maps: Vec<Map> = generate_maps(seed, map_height, map_width, path_density);
 
     for (i, map) in maps.iter().enumerate() {
-        println!("\n\nAct {:?}", i + 1);
-        print_map(&map);
+        println!("\n\nAct {:?}\n{}", i + 1, format_map(&map));
         if let Some(path) = path {
             if path.exists() {
                 let file_name = format!("{:?}_Act{:?}.json", seed, i + 1);
