@@ -602,15 +602,12 @@ pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i
         .map(|act| {
             let mut rng = Random::new(seed + act);
             let mut map = generate_dungeon(map_height, map_width, path_density, &mut rng);
-            let mut count = 0usize;
-            for row in map.iter() {
-                for n in row.iter() {
-                    if n.edges.is_empty() || n.y as usize == map.len() - 1 {
-                        continue;
-                    }
-                    count += 1;
-                }
-            }
+            let count = map
+                .iter()
+                .flat_map(|row| row.iter())
+                .filter(|n| !n.edges.is_empty() && n.y as usize != map.len() - 1)
+                .count();
+
             map[0]
                 .iter_mut()
                 .for_each(|node| node.class = Some(MonsterRoom));
