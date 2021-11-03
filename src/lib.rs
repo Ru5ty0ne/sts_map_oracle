@@ -6,9 +6,9 @@ use std::path::Path;
 use RoomType::*;
 
 #[derive(PartialEq, Eq, Hash)]
-struct Point {
-    x: usize,
-    y: usize,
+pub struct Point {
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Point {
@@ -22,11 +22,11 @@ impl Point {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
-struct MapEdge {
-    src_x: i32,
-    src_y: i32,
-    dst_x: i32,
-    dst_y: i32,
+pub struct MapEdge {
+    pub src_x: i32,
+    pub src_y: i32,
+    pub dst_x: i32,
+    pub dst_y: i32,
 }
 
 impl MapEdge {
@@ -56,7 +56,7 @@ impl Ord for MapEdge {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Hash, Copy)]
-enum RoomType {
+pub enum RoomType {
     EventRoom,
     MonsterRoom,
     MonsterRoomElite,
@@ -66,11 +66,11 @@ enum RoomType {
 }
 
 pub struct MapRoomNode {
-    x: i32,
-    y: i32,
-    edges: BTreeSet<MapEdge>,
-    parents: Vec<Point>,
-    class: Option<RoomType>,
+    pub x: i32,
+    pub y: i32,
+    pub edges: BTreeSet<MapEdge>,
+    pub parents: Vec<Point>,
+    pub class: Option<RoomType>,
 }
 
 impl PartialEq for MapRoomNode {
