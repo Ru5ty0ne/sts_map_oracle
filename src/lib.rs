@@ -11,7 +11,7 @@ macro_rules! debug_println {
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Point {
     pub x: usize,
     pub y: usize,
@@ -71,12 +71,16 @@ pub enum RoomType {
     TreasureRoom,
 }
 
+#[derive(Debug, Serialize)]
 pub struct MapRoomNode {
     pub x: i32,
     pub y: i32,
-    pub edges: BTreeSet<MapEdge>,
-    pub parents: Vec<Point>,
     pub class: Option<RoomType>,
+
+    #[serde(skip)]
+    pub edges: BTreeSet<MapEdge>,
+    #[serde(skip)]
+    pub parents: Vec<Point>,
 }
 
 impl PartialEq for MapRoomNode {
@@ -547,17 +551,10 @@ fn distribute_rooms_across_map(
     map
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct DumpNode {
-    x: i32,
-    y: i32,
-    class: RoomType,
-}
-
 #[derive(Serialize, Debug)]
-struct DumpMap<'edge> {
-    edges: Vec<&'edge MapEdge>,
-    nodes: Vec<DumpNode>,
+struct DumpMap<'map> {
+    edges: Vec<&'map MapEdge>,
+    nodes: Vec<&'map MapRoomNode>,
 }
 
 pub fn dump_map(map: &Map) -> String {
@@ -565,13 +562,9 @@ pub fn dump_map(map: &Map) -> String {
     let mut nodes = vec![];
     for row in map.iter() {
         for node in row.iter() {
-            if let Some(t) = node.class {
+            if node.class.is_some() {
                 if !node.parents.is_empty() || !node.edges.is_empty() {
-                    nodes.push(DumpNode {
-                        x: node.x,
-                        y: node.y,
-                        class: t,
-                    });
+                    nodes.push(node);
                 }
                 edges.extend(&node.edges);
             }
