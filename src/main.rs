@@ -1,11 +1,26 @@
-#![feature(unchecked_math)]
 use clap::{App, Arg};
 use std::path::Path;
 
 use sts_map_oracle::dump_map;
+use sts_map_oracle::format_map;
 use sts_map_oracle::generate_maps;
-use sts_map_oracle::print_map;
 use sts_map_oracle::Map;
+
+fn write_to_file(s: &str, path: &Path) {
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    let display = path.display();
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("couldn't create {}: {}", display, why),
+        Ok(file) => file,
+    };
+
+    match file.write_all(s.as_bytes()) {
+        Err(why) => panic!("couldn't write to {}: {}", display, why),
+        Ok(_) => println!("Map saved to {}", display),
+    }
+}
 
 fn main() {
     let matches = App::new("sts_map_oracle")
@@ -45,13 +60,12 @@ fn main() {
     let maps: Vec<Map> = generate_maps(seed, map_height, map_width, path_density);
 
     for (i, map) in maps.iter().enumerate() {
-        println!("\n\nAct {:?}", i + 1);
-        print_map(&map);
+        println!("\n\nAct {:?}\n{}", i + 1, format_map(&map));
         if let Some(path) = path {
             if path.exists() {
                 let file_name = format!("{:?}_Act{:?}.json", seed, i + 1);
                 let path = path.join(file_name);
-                dump_map(&map, &path);
+                write_to_file(&dump_map(&map), &path);
             } else {
                 println!("Can't save map because path {:?} doesn't exist", &path);
             }

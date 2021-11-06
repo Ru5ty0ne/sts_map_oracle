@@ -1,11 +1,17 @@
-#![feature(unchecked_math)]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::path::Path;
 use RoomType::*;
 
-#[derive(PartialEq, Eq, Hash)]
+/// println!, but with a #[cfg(debug_assertions)] criterion.
+macro_rules! debug_println {
+    ( $( $t:tt )* ) => {
+        #[cfg(debug_assertions)]
+        println!($( $t )*);
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Point {
     pub x: usize,
     pub y: usize,
@@ -65,12 +71,16 @@ pub enum RoomType {
     TreasureRoom,
 }
 
+#[derive(Debug, Serialize)]
 pub struct MapRoomNode {
     pub x: i32,
     pub y: i32,
-    pub edges: BTreeSet<MapEdge>,
-    pub parents: Vec<Point>,
     pub class: Option<RoomType>,
+
+    #[serde(skip)]
+    pub edges: BTreeSet<MapEdge>,
+    #[serde(skip)]
+    pub parents: Vec<Point>,
 }
 
 impl PartialEq for MapRoomNode {
@@ -117,7 +127,7 @@ impl Random {
         self.seed0 = s0;
         s1 ^= s1 << 23;
         self.seed1 = s1 ^ s0 ^ s1 >> 17 ^ s0 >> 26;
-        unsafe { s0.unchecked_add(self.seed1) }
+        s0.wrapping_add(self.seed1)
     }
 
     fn next_shuffle(&mut self, n: u64) -> usize {
@@ -143,21 +153,17 @@ impl Random {
     }
 }
 
-fn murmur_hash3(x: u64) -> u64 {
-    let mut x = x;
+fn murmur_hash3(mut x: u64) -> u64 {
     x ^= x >> 33;
-    unsafe {
-        x = x.unchecked_mul(0xff51afd7ed558ccd);
-        x ^= x >> 33;
-        x = x.unchecked_mul(0xc4ceb9fe1a85ec53);
-    }
+    x = x.wrapping_mul(0xff51afd7ed558ccd);
+    x ^= x >> 33;
+    x = x.wrapping_mul(0xc4ceb9fe1a85ec53);
     x ^= x >> 33;
     x
 }
 
 //Trim edges with common destination on first floor
-fn filter_redutant_edges(map: Map) -> Map {
-    let mut map = map;
+fn filter_redutant_edges(mut map: Map) -> Map {
     let mut existing_edges: HashSet<Point> = HashSet::new();
     let mut delete_list: Vec<(usize, MapEdge)> = vec![];
     for (i, node) in map[0].iter().enumerate() {
@@ -185,8 +191,7 @@ fn generate_dungeon(height: i32, width: i32, path_density: i32, rng: &mut Random
     filter_redutant_edges(map)
 }
 
-fn create_paths(nodes: Map, path_density: i32, rng: &mut Random) -> Map {
-    let mut nodes = nodes;
+fn create_paths(mut nodes: Map, path_density: i32, rng: &mut Random) -> Map {
     assert!(!nodes.is_empty());
     assert!(!nodes[0].is_empty());
     let row_size = (nodes[0].len() - 1) as i32;
@@ -205,8 +210,7 @@ fn create_paths(nodes: Map, path_density: i32, rng: &mut Random) -> Map {
     nodes
 }
 
-fn _create_paths(nodes: Map, edge: &MapEdge, rng: &mut Random) -> Map {
-    let mut nodes = nodes;
+fn _create_paths(mut nodes: Map, edge: &MapEdge, rng: &mut Random) -> Map {
     let min;
     let max;
     let current_node: &MapRoomNode = &nodes[edge.dst_y as usize][edge.dst_x as usize];
@@ -334,8 +338,16 @@ fn get_common_ancestor<'a>(
         if l_node.get_parents(map).is_empty() || r_node.get_parents(map).is_empty() {
             return None;
         }
-        l_node = get_nodes_with_max_x(l_node.get_parents(map));
-        r_node = get_nodes_with_min_x(r_node.get_parents(map));
+        l_node = l_node
+            .get_parents(map)
+            .iter()
+            .max_by_key(|point| point.x)
+            .unwrap();
+        r_node = r_node
+            .get_parents(map)
+            .iter()
+            .min_by_key(|point| point.x)
+            .unwrap();
         if l_node == r_node {
             return Some(l_node);
         }
@@ -344,38 +356,10 @@ fn get_common_ancestor<'a>(
     None
 }
 
-fn get_nodes_with_max_x(points: &[Point]) -> &Point {
-    assert!(!points.is_empty());
-    let mut max = &points[0];
-    for point in points.iter() {
-        if point.x > max.x {
-            max = point;
-        }
-    }
-    max
-}
-
-fn get_nodes_with_min_x(points: &[Point]) -> &Point {
-    assert!(!points.is_empty());
-    let mut min = &points[0];
-    for point in points.iter() {
-        if point.x < min.x {
-            min = point;
-        }
-    }
-    min
-}
-
 fn create_nodes(height: i32, width: i32) -> Map {
-    let mut nodes: Map = vec![];
-    for y in 0..height {
-        let mut row = vec![];
-        for x in 0..width {
-            row.push(MapRoomNode::new(x, y));
-        }
-        nodes.push(row);
-    }
-    nodes
+    (0..height)
+        .map(|y| (0..width).map(|x| MapRoomNode::new(x, y)).collect())
+        .collect()
 }
 
 fn get_room_symbol(t: &Option<RoomType>) -> &str {
@@ -392,27 +376,22 @@ fn get_room_symbol(t: &Option<RoomType>) -> &str {
     }
 }
 
-pub fn print_map(nodes: &Map) {
+pub fn format_map(nodes: &Map) -> String {
     let mut s = String::new();
-    let mut row_num = nodes.len() - 1;
-    let left_padding_size = 5;
-    loop {
-        s.push_str(&format!("\n {}", &padding_genrator(left_padding_size)));
+    for row_num in (0..nodes.len()).rev() {
+        s.push_str(&format!("\n{: <6}", ""));
         for node in nodes[row_num].iter() {
             let (mut right, mut mid, mut left) = (" ", " ", " ");
             for edge in node.edges.iter() {
                 match edge.dst_x.cmp(&node.x) {
                     Ordering::Equal => mid = "|",
-                    Ordering::Less => left = "\\",
+                    Ordering::Less => left = r"\",
                     Ordering::Greater => right = "/",
                 };
             }
             s.push_str(&format!("{}{}{}", left, mid, right));
         }
-        s.push_str(&format!("\n{} ", &row_num.to_string()));
-        s.push_str(&padding_genrator(
-            left_padding_size - row_num.to_string().len(),
-        ));
+        s.push_str(&format!("\n{: <6}", row_num));
         for node in nodes[row_num].iter() {
             let mut node_symbol = " ";
             if row_num == nodes.len() - 1 {
@@ -428,19 +407,8 @@ pub fn print_map(nodes: &Map) {
             }
             s.push_str(&format!(" {} ", node_symbol));
         }
-        if row_num == 0 {
-            break;
-        }
-        row_num -= 1;
     }
-    println!("{}", &s);
-}
 
-fn padding_genrator(n: usize) -> String {
-    let mut s = String::new();
-    for _i in 0..n {
-        s.push(' ');
-    }
     s
 }
 
@@ -449,20 +417,17 @@ fn generate_room_type(
     available_room_count: usize,
 ) -> Vec<RoomType> {
     let mut acc = vec![];
-    #[cfg(debug_assertions)]
-    println!("Rooms: {:?}", &available_room_count);
+    debug_println!("Rooms: {:?}", &available_room_count);
     let rooms_type_q = [ShopRoom, RestRoom, MonsterRoomElite, EventRoom];
     for t in rooms_type_q.iter() {
         let chance = room_chances.get(&t).unwrap();
         let rooms = (chance * available_room_count as f64).round() as usize;
-        #[cfg(debug_assertions)]
-        println!("{:?}: {:?}", &t, &rooms);
+        debug_println!("{:?}: {:?}", &t, &rooms);
         for _i in 0..rooms {
             acc.push(*t);
         }
     }
-    #[cfg(debug_assertions)]
-    println!("{:?}: {:?}", &MonsterRoom, available_room_count - acc.len());
+    debug_println!("{:?}: {:?}", &MonsterRoom, available_room_count - acc.len());
     acc
 }
 fn rule_assignable_to_row(n: &MapRoomNode, room: &RoomType) -> bool {
@@ -485,15 +450,11 @@ fn rule_sibling_matches(sibs: &[&MapRoomNode], room: &RoomType) -> bool {
         MonsterRoom,
         EventRoom,
     ];
-    for sib in sibs.iter() {
-        if sib.class.is_some()
-            && applicable_rooms.contains(&room)
-            && room == sib.class.as_ref().unwrap()
-        {
-            return true;
-        }
-    }
-    false
+    applicable_rooms.contains(&room)
+        && sibs
+            .iter()
+            .flat_map(|sib| sib.class)
+            .any(|class| class == *room)
 }
 
 fn get_next_room_type(map: &Map, n: &MapRoomNode, room_list: &[RoomType]) -> Option<RoomType> {
@@ -515,31 +476,23 @@ fn get_next_room_type(map: &Map, n: &MapRoomNode, room_list: &[RoomType]) -> Opt
 
 fn rule_parent_matches(map: &Map, parents: &[Point], room: &RoomType) -> bool {
     let applicable_rooms = [RestRoom, TreasureRoom, ShopRoom, MonsterRoomElite];
-    for parent in parents.iter() {
-        if let Some(class) = parent.get_node(map).class {
-            if applicable_rooms.contains(&class) && room == &class {
-                return true;
-            }
-        }
-    }
-    false
+    applicable_rooms.contains(room)
+        && parents
+            .iter()
+            .flat_map(|parent| parent.get_node(map).class)
+            .any(|class| class == *room)
 }
 
 fn get_siblings<'a>(map: &'a Map, node: &'a MapRoomNode) -> Vec<&'a MapRoomNode> {
-    let mut siblings = vec![];
-    for parent in node.parents.iter() {
-        for edge in parent.get_node(map).edges.iter() {
-            let sib_node = &map[edge.dst_y as usize][edge.dst_x as usize];
-            if sib_node != node {
-                siblings.push(sib_node);
-            }
-        }
-    }
-    siblings
+    node.parents
+        .iter()
+        .flat_map(|parent| parent.get_node(map).edges.iter())
+        .map(|edge| &map[edge.dst_y as usize][edge.dst_x as usize])
+        .filter(|sib_node| *sib_node != node)
+        .collect()
 }
 
-fn assign_rooms_to_nodes(map: Map, room_list: &mut Vec<RoomType>) -> Map {
-    let mut map = map;
+fn assign_rooms_to_nodes(mut map: Map, room_list: &mut Vec<RoomType>) -> Map {
     let height = map.len();
     let width = map[0].len();
     for y in 0..height {
@@ -555,21 +508,19 @@ fn assign_rooms_to_nodes(map: Map, room_list: &mut Vec<RoomType>) -> Map {
         }
     }
     if !room_list.is_empty() {
-        #[cfg(debug_assertions)]
-        println!("Leftovers: {:?}", &room_list);
+        debug_println!("Leftovers: {:?}", &room_list);
     }
     map
 }
 
-fn last_minute_node_checker(map: Map) -> Map {
-    let mut map = map;
+fn last_minute_node_checker(mut map: Map) -> Map {
     for row in map.iter_mut() {
         for node in row.iter_mut() {
             if !node.edges.is_empty() && node.class.is_none() {
-                #[cfg(debug_assertions)]
-                println!(
+                debug_println!(
                     "Room [{:?},{:?}] was empty. Now populated with monsters.",
-                    &node.y, &node.x
+                    &node.y,
+                    &node.x
                 );
                 node.class = Some(MonsterRoom);
             }
@@ -579,106 +530,68 @@ fn last_minute_node_checker(map: Map) -> Map {
 }
 
 fn count_connected_nodes(map: &Map) -> usize {
-    let mut res = 0;
-    for row in map.iter() {
-        for node in row.iter() {
-            if !node.edges.is_empty() && node.class.is_none() {
-                res += 1;
-            }
-        }
-    }
-    res
+    map.iter()
+        .flat_map(|row| row.iter())
+        .filter(|node| !node.edges.is_empty() && node.class.is_none())
+        .count()
 }
 
-fn distribute_rooms_across_map(map: Map, room_list: Vec<RoomType>, rng: &mut Random) -> Map {
-    let mut map = map;
-    let mut room_list = room_list;
+fn distribute_rooms_across_map(
+    mut map: Map,
+    mut room_list: Vec<RoomType>,
+    rng: &mut Random,
+) -> Map {
     let node_count = count_connected_nodes(&map);
-    while room_list.len() < node_count {
-        room_list.push(MonsterRoom);
-    }
+    room_list.resize(std::cmp::max(room_list.len(), node_count), MonsterRoom);
     shuffle(&mut room_list, rng);
     map = assign_rooms_to_nodes(map, &mut room_list);
     map = last_minute_node_checker(map);
     map
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct DumpNode {
-    x: i32,
-    y: i32,
-    class: RoomType,
+#[derive(Serialize, Debug)]
+struct DumpMap<'map> {
+    edges: Vec<&'map MapEdge>,
+    nodes: Vec<&'map MapRoomNode>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct DumpMap {
-    edges: Vec<MapEdge>,
-    nodes: Vec<DumpNode>,
-}
-
-pub fn dump_map(map: &Map, path: &Path) {
+pub fn dump_map(map: &Map) -> String {
     let mut edges = vec![];
     let mut nodes = vec![];
     for row in map.iter() {
         for node in row.iter() {
-            if let Some(t) = node.class {
+            if node.class.is_some() {
                 if !node.parents.is_empty() || !node.edges.is_empty() {
-                    nodes.push(DumpNode {
-                        x: node.x,
-                        y: node.y,
-                        class: t,
-                    });
+                    nodes.push(node);
                 }
-                for edge in node.edges.iter() {
-                    edges.push(edge.clone());
-                }
+                edges.extend(&node.edges);
             }
         }
     }
     let dump = DumpMap { edges, nodes };
-    let serialized = serde_json::to_string(&dump).unwrap();
-    write_to_file(&serialized, path);
-}
-
-fn write_to_file(s: &str, path: &Path) {
-    use std::fs::File;
-    use std::io::prelude::*;
-
-    let display = path.display();
-    let mut file = match File::create(&path) {
-        Err(why) => panic!("couldn't create {}: {}", display, why),
-        Ok(file) => file,
-    };
-
-    match file.write_all(s.as_bytes()) {
-        Err(why) => panic!("couldn't write to {}: {}", display, why),
-        Ok(_) => println!("Map saved to {}", display),
-    }
+    serde_json::to_string(&dump).unwrap()
 }
 
 fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
-    let size = list.len();
-    for i in (2..=size).rev() {
+    for i in (2..=list.len()).rev() {
         let tmp = rng.next_shuffle(i as u64);
         list.swap(tmp, i - 1);
     }
 }
 
 pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i32) -> Vec<Map> {
-    let acts = [1, 200, 600];
-    acts.iter()
+    const ACT_SEEDS: [i64; 3] = [1, 200, 600];
+    ACT_SEEDS
+        .iter()
         .map(|act| {
             let mut rng = Random::new(seed + act);
             let mut map = generate_dungeon(map_height, map_width, path_density, &mut rng);
-            let mut count = 0usize;
-            for row in map.iter() {
-                for n in row.iter() {
-                    if n.edges.is_empty() || n.y as usize == map.len() - 1 {
-                        continue;
-                    }
-                    count += 1;
-                }
-            }
+            let count = map
+                .iter()
+                .flat_map(|row| row.iter())
+                .filter(|n| !n.edges.is_empty() && n.y as usize != map.len() - 1)
+                .count();
+
             map[0]
                 .iter_mut()
                 .for_each(|node| node.class = Some(MonsterRoom));
