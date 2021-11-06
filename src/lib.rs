@@ -554,9 +554,9 @@ struct DumpNode {
     class: RoomType,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct DumpMap {
-    edges: Vec<MapEdge>,
+#[derive(Serialize, Debug)]
+struct DumpMap<'edge> {
+    edges: Vec<&'edge MapEdge>,
     nodes: Vec<DumpNode>,
 }
 
@@ -573,7 +573,7 @@ pub fn dump_map(map: &Map) -> String {
                         class: t,
                     });
                 }
-                edges.extend(node.edges.iter().cloned());
+                edges.extend(&node.edges);
             }
         }
     }
