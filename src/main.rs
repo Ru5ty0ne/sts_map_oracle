@@ -43,6 +43,12 @@ fn main() {
                 .help("Path for saving maps in json format")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("ascension zero")
+                .short("a")
+                .long("a0")
+                .takes_value(false),
+        )
         .get_matches();
 
     let map_height = 15i32;
@@ -56,8 +62,9 @@ fn main() {
         }
     };
     let path = &matches.value_of("path").map(Path::new);
+    let is_ascension_zero = matches.is_present("ascension zero");
 
-    let maps: Vec<Map> = generate_maps(seed, map_height, map_width, path_density);
+    let maps: Vec<Map> = generate_maps(seed, map_height, map_width, path_density, is_ascension_zero);
 
     for (i, map) in maps.iter().enumerate() {
         println!("\n\nAct {:?}\n{}", i + 1, format_map(&map));

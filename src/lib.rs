@@ -579,7 +579,7 @@ fn shuffle<T: std::fmt::Debug>(list: &mut Vec<T>, rng: &mut Random) {
     }
 }
 
-pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i32) -> Vec<Map> {
+pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i32, is_ascension_zero: bool) -> Vec<Map> {
     const ACT_SEEDS: [i64; 3] = [1, 200, 600];
     ACT_SEEDS
         .iter()
@@ -607,7 +607,7 @@ pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i
                 (ShopRoom, 0.05),
                 (RestRoom, 0.12),
                 (EventRoom, 0.22),
-                (MonsterRoomElite, 0.08 * 1.6), //x1.6 for ascensionLevel >= 1
+                (MonsterRoomElite, 0.08 * if is_ascension_zero { 1.0 } else { 1.6 }), //x1.6 for ascensionLevel >= 1
             ]
             .iter()
             .cloned()
