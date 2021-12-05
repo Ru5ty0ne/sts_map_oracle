@@ -589,7 +589,7 @@ pub fn generate_maps(seed: i64, map_height: i32, map_width: i32, path_density: i
             let count = map
                 .iter()
                 .flat_map(|row| row.iter())
-                .filter(|n| !n.edges.is_empty() && n.y as usize != map.len() - 1)
+                .filter(|n| ((!n.edges.is_empty() || (n.y as usize == map.len() - 1 && !n.parents.is_empty())) && n.y as usize != map.len() - 2))
                 .count();
 
             map[0]
